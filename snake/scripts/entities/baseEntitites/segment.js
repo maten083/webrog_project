@@ -12,6 +12,8 @@ export class Segment {
 
     /** @type{Matrix4f} */#matrix;
 
+    /** @type{number} */#segmentIndex;
+
     /**
      * @param {Entity} entity
      * @param {number} x
@@ -25,6 +27,7 @@ export class Segment {
         this.#direction = direction;
         this.#turningPoints = [];
         this.#matrix = Matrix4f.identity();
+        this.#segmentIndex = entity.getSegments().length;
     }
 
     /**
@@ -85,6 +88,14 @@ export class Segment {
     }
 
     /**
+     * Get all turning points
+     * @returns {Array<{x: Number, y: Number, direction: Direction}>}
+     */
+    getTurningPoints() {
+        return this.#turningPoints;
+    }
+
+    /**
      * Add a turning point
      * @param {number} x
      * @param {number} y
@@ -107,10 +118,8 @@ export class Segment {
     getTexture() {
         if (this.#entity.isInvariantTextures()) return this.#entity.getFirstTexture();
 
-        const segmentIndex = this.#entity.getSegments().findIndex(t => t === this);
-
-        if (segmentIndex === 0) return this.#entity.getFirstTexture();
-        if (segmentIndex === this.#entity.getTextures().length - 1) return this.#entity.getLastTexture();
+        if (this.#segmentIndex === 0) return this.#entity.getFirstTexture();
+        if (this.#segmentIndex === this.#entity.getTextures().length - 1) return this.#entity.getLastTexture();
 
         return this.#entity.getMiddleTexture();
     }

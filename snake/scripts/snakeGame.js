@@ -25,7 +25,7 @@ export class SnakeGame {
     /** @type{FpsManager} */ #fpsManager;
 
     /** @type{{SPEED: number}} */static variables = {
-        SPEED: 0.1,
+        SPEED: 0.2,
         AREA_WIDTH: 600,
         AREA_HEIGHT: 600,
         SUPER_DURATION: 200,
@@ -72,7 +72,7 @@ export class SnakeGame {
                 this.#loader.getTexture(TextureTypes.APPLE),
                 this.#loader.getTexture(TextureTypes.SUPER_APPLE));
 
-            this.#snake = new Snake(0, 0, Direction.LEFT);
+            this.#snake = new Snake(0, 0, Direction.RIGHT);
             this.#snake.setTextures(this.#loader.getTexture(TextureTypes.SNAKE_HEAD),
                 this.#loader.getTexture(TextureTypes.SNAKE_BODY),
                 this.#loader.getTexture(TextureTypes.SNAKE_TAIL));

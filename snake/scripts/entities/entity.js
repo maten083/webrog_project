@@ -18,7 +18,7 @@ export class Entity {
     /** @type {WebGLTexture} */ #middleTexture;
     /** @type {WebGLTexture} */ #lastTexture;
 
-    /** @type {number} */#scale = 0.05;
+    /** @type {number} */#scale = 0.04;
 
     /**
      * @param {number} x
@@ -26,11 +26,17 @@ export class Entity {
      * @param {Direction} direction
      */
     constructor(x = 0, y = 0, direction = Direction.RIGHT) {
-        this.#segments = [
-            new Segment(this, x, y, direction)
-        ];
+        this.#segments = [];
+        this.#segments.push(new Segment(this, x, y, direction));
     }
 
+    addSegment(x, y) {
+        const last = this.#segments[this.#segments.length - 1];
+        const newSegment = new Segment(this, x, y, last.getDirection());
+        for (const turningPoint of last.getTurningPoints())
+            newSegment.addTurningPoint(turningPoint.x, turningPoint.y, turningPoint.direction);
+        this.#segments.push(newSegment);
+    }
     /**
      * Get the direction of the first segment
      * @returns {Direction}

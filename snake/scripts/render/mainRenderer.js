@@ -30,6 +30,9 @@ export class MainRenderer {
      * Clears the previous scene
      */
     prepare() {
+        this.#gl.enable(this.#gl.BLEND);
+        this.#gl.blendEquation(this.#gl.FUNC_ADD);
+        this.#gl.blendFunc(this.#gl.SRC_ALPHA, this.#gl.ONE_MINUS_SRC_ALPHA);
         this.#gl.clearColor(1, 0, 0, 1);
         this.#gl.clear(this.#gl.COLOR_BUFFER_BIT);
         this.#program.use();
