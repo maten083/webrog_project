@@ -1,12 +1,18 @@
 export class BaseSystem {
-    /** @type{HTMLDivElement} */
-    root;
-    /** @type{string} */
-    type;
+    /** @type{HTMLDivElement} */root;
+    /** @type{string} */type;
+    /** @type{SnakeGame} */snakeGame;
 
-    constructor(/** @type{string} */type, /** @type{HTMLDivElement} */root) {
+    /**
+     *
+     * @param {string} type
+     * @param {HTMLDivElement} root
+     * @param {SnakeGame} snakeGame
+     */
+    constructor(type, root, snakeGame) {
         this.root = root;
         this.type = type;
+        this.snakeGame = snakeGame;
     }
     /**
      * Implementation required
@@ -14,4 +20,6 @@ export class BaseSystem {
     init() {
         throw new Error("Init method was not implemented in the subsystem");
     }
+    
+    update(deltaTime) {}
 }

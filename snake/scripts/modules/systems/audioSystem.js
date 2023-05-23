@@ -21,8 +21,12 @@ export class AudioSystem extends BaseSystem {
     #availableMusics;
     #audioBank;
 
-    constructor(root) {
-        super("audio", root);
+    /**
+     * @param {HTMLDivElement} root
+     * @param {SnakeGame} snakeGame
+     */
+    constructor(root, snakeGame) {
+        super("audio", root, snakeGame);
         this.#audioBank = {};
         this.#availableMusics = [
             {

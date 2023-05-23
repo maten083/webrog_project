@@ -4,15 +4,31 @@ export class SystemManager {
     /** @type{object} */
     #systems;
 
-    constructor(/** @type{HTMLDivElement} */root) {
+    constructor() {
         this.#systems = {};
     }
-    loadSystems() {
+
+    /**
+     * Load all systems dynamically
+     * @param {HTMLDivElement} root
+     * @param {SnakeGame} snakeGame
+     */
+    loadSystems(root, snakeGame) {
         for (const system of Object.values(systems)) {
             if (typeof system !== "function") continue;
-            const sys = new system(root);
+            const sys = new system(root, snakeGame);
             sys.init();
             this.#systems[sys.type] = sys;
+        }
+    }
+
+    /**
+     * Updates all systems
+     * @param {number} delta
+     */
+    updateSystems(delta) {
+        for (const system of Object.values(this.#systems)) {
+            system.update(delta);
         }
     }
     /** @returns{systems.AudioSystem} */
@@ -25,8 +41,8 @@ export class SystemManager {
         return this.#systems["config"];
     }
 
-    /** @returns{systems.SpawnSystem} */
-    getSpawn() {
-        return this.#systems["spawn"];
+    /** @returns{systems.EntitySystem} */
+    getEntity() {
+        return this.#systems["entity"];
     }
 }

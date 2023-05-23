@@ -19,18 +19,44 @@ const ControlKeys = {
     CANCEL: 5
 }
 export class ConfigSystem extends BaseSystem {
-    #keymap;
+    /** @type{string[]} */ #excludedValues;
+    /** @type{CustomEvent} */ #cancelEvent;
+    /** @type{CustomEvent} */ #configChanged;
 
-    constructor(/** @type{HTMLDivElement} */root) {
-        super("config", root)
+    /** @type{object} */ keymap;
+    /** @type{number} */ fps = 120;
 
-        this.#keymap = {};
+    /** @type{ControlKeys|null} */ recording;
+
+    /**
+     * Initialize config system
+     * @param {HTMLDivElement} root
+     * @param {SnakeGame} snakeGame
+     */
+    constructor(root, snakeGame) {
+        super("config", root, snakeGame)
+
+        this.keymap = {};
+        this.#excludedValues = [
+            '#excludedValues',
+            '#cancelEvent',
+            '#configChanged',
+            'root',
+            'type',
+            'recording'
+        ]
+        this.#cancelEvent = new CustomEvent("cancel_record");
+        this.#configChanged = new CustomEvent("config_changed");
     }
 
+    /**
+     * Load config from LocalStorage
+     */
     init() {
-        let items = localStorage.getItem("snake_keymap");
-        if (!items) {
-            this.#keymap = {
+        let configJson = localStorage.getItem("snake_config");
+
+        if (!configJson) {
+            this.keymap = {
                 [ControlKeys.UP]: 'KeyW',
                 [ControlKeys.DOWN]: 'KeyS',
                 [ControlKeys.LEFT]: 'KeyA',
@@ -38,31 +64,89 @@ export class ConfigSystem extends BaseSystem {
                 [ControlKeys.CONFIRM]: 'Enter',
                 [ControlKeys.CANCEL]: 'Escape',
             };
-        } else {
-            this.#keymap = JSON.parse(items);
+
+            this.save();
+        }
+        else {
+            const config = JSON.parse(configJson);
+            Object.assign(this, config);
         }
     }
 
-    /** @returns(string) */
-    getKey(/** @type{ControlKeys} */ key) {
-        return this.#keymap[key];
+    getFps() {
+        return this.fps;
+    }
+    setFps(fps) {
+        this.fps = fps;
+        this.#configChanged.detail = { type: 'fps' };
+        this.root.dispatchEvent(this.#configChanged);
+        this.save();
     }
 
     /**
-     * resolves when a new key has been set;
-     * rejects when it was cancelled
-     * @returns(Promise)
+     * Cancels the current key recording.
      */
-    registerKey(/** @type{HTMLCanvasElement} */ canvas, /** @type{ControlKeys} */ key) {
-        return new Promise((resolve, _) => {
-            const regKey = function(/** @type{KeyboardEvent}*/e) {
-                this.#keymap[key] = e.key;
-                canvas.removeEventListener("keydown", regKey);
+    cancel() {
+        this.root.dispatchEvent(this.#cancelEvent);
+    }
 
-                resolve();
+    /**
+     * Save current config to LocalStorage
+     */
+    save() {
+        const entries = Object.entries(this);
+        const object = {};
+        for (const entry of entries) {
+            if (!this.#excludedValues.includes(entry[0])) {
+                object[entry[0]] = entry[1]
+            }
+        }
+        localStorage.setItem("snake_config", JSON.stringify(object));
+    }
+
+    /**
+     * Get a keycode for a specific action
+     * @param {ControlKeys} key
+     * @returns {string} The keycode, like KeyA
+     */
+    getKey(key) {
+        return this.keymap[key];
+    }
+
+    /**
+     * Records a key. Resolves when a new key has been set; rejects when it was cancelled
+     * @param {HTMLCanvasElement} canvas
+     * @param {ControlKeys} key
+     * @returns {Promise<void>}
+     */
+    registerKey(canvas, key) {
+        return new Promise((resolve, reject) => {
+            this.recording = key;
+            canvas.addEventListener("keydown", this.#innerRegisterKey.bind(this, key, canvas, resolve));
+
+            const cancel = function() {
+                this.root.removeEventListener('cancel_record', cancel);
+                canvas.removeEventListener("keydown", this.#innerRegisterKey);
+                this.recording = null;
+                reject();
             }.bind(this);
-            canvas.addEventListener("keydown", regKey);
+            this.root.addEventListener('cancel_record', cancel)
         })
+    }
+
+    /**
+     * Parameter 'e' is populated by the event listener
+     * @param {ControlKeys} key
+     * @param {HTMLCanvasElement} canvas
+     * @param {function} resolve
+     * @param {KeyboardEvent} e
+     */
+    #innerRegisterKey(key, canvas, resolve, e) {
+        this.keymap[key] = e.key;
+        this.#configChanged.detail = { type: 'key' };
+        canvas.removeEventListener("keydown", this.#innerRegisterKey);
+        this.recording = null;
+        resolve();
     }
 }
 export { ControlKeys }
