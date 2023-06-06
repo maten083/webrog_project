@@ -139,9 +139,8 @@ export class Grid {
                 if (this.now === 1 && this.whiteDown === 9 || this.now === 2 && this.blackDown === 9) {
                     finishPoint.occupied = this.now;
                     startPoint.occupied = 0;
-                    // TODO: hasMills nem megy itt
-                    this.checkFromMills(start);
-                    this.take = this.hasMills(finish);
+                    this.checkFromMills(startPoint);
+                    this.take = this.hasMills(finishPoint);
 
                     if (!this.take) {
                         this.switchNow();
@@ -164,11 +163,13 @@ export class Grid {
             this.message = "Fekete nyert!";
             this.mouse.onclick = null;
             this.mouse.ondrag = null;
+            this.showPoints();
         }
         else if (this.blackDown === 9 && this.blackNowDown() < 3) {
             this.message = "Fehér nyert!";
             this.mouse.onclick = null;
             this.mouse.ondrag = null;
+            this.showPoints();
         }
     }
     showPoints() {

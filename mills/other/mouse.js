@@ -3,6 +3,7 @@ export class Mouse {
     ondrag;
     start;
     dragging;
+    dragThreshold = 10;
     constructor(canvas) {
         this.ondrag = null;
         this.onclick = null;
@@ -11,8 +12,13 @@ export class Mouse {
             this.start = event;
             this.dragging = false;
         }.bind(this));
-        canvas.addEventListener('mousemove', function() {
-            this.dragging = true;
+        canvas.addEventListener('mousemove', function(event) {
+            if (this.start !== null) {
+                if (Math.sqrt(Math.pow(this.start.clientX - event.clientX, 2)
+                    + Math.pow(this.start.clientY - event.clientY, 2)) > 10) {
+                    this.dragging = true;
+                }
+            }
         }.bind(this));
         canvas.addEventListener('mouseup', function(event) {
             if (this.dragging) {
