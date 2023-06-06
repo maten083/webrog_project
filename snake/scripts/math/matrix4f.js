@@ -54,56 +54,6 @@ export class Matrix4f {
         };
         return new Matrix4f(identity);
     }
-
-    /**
-     * Multiply two matrices
-     * @param {Matrix4f} matrix
-     */
-    multiply(matrix) {
-        const result = Matrix4f.identity();
-
-        result.m00 = this.m00 * matrix.m00 + this.m10 * matrix.m01 + this.m20 * matrix.m02 + this.m30 * matrix.m03;
-        result.m01 = this.m01 * matrix.m00 + this.m11 * matrix.m01 + this.m21 * matrix.m02 + this.m31 * matrix.m03;
-        result.m02 = this.m02 * matrix.m00 + this.m12 * matrix.m01 + this.m22 * matrix.m02 + this.m32 * matrix.m03;
-        result.m03 = this.m03 * matrix.m00 + this.m13 * matrix.m01 + this.m23 * matrix.m02 + this.m33 * matrix.m03;
-
-        result.m10 = this.m00 * matrix.m10 + this.m10 * matrix.m11 + this.m20 * matrix.m12 + this.m30 * matrix.m13;
-        result.m11 = this.m01 * matrix.m10 + this.m11 * matrix.m11 + this.m21 * matrix.m12 + this.m31 * matrix.m13;
-        result.m12 = this.m02 * matrix.m10 + this.m12 * matrix.m11 + this.m22 * matrix.m12 + this.m32 * matrix.m13;
-        result.m13 = this.m03 * matrix.m10 + this.m13 * matrix.m11 + this.m23 * matrix.m12 + this.m33 * matrix.m13;
-
-        result.m20 = this.m00 * matrix.m20 + this.m10 * matrix.m21 + this.m20 * matrix.m22 + this.m30 * matrix.m23;
-        result.m21 = this.m01 * matrix.m20 + this.m11 * matrix.m21 + this.m21 * matrix.m22 + this.m31 * matrix.m23;
-        result.m22 = this.m02 * matrix.m20 + this.m12 * matrix.m21 + this.m22 * matrix.m22 + this.m32 * matrix.m23;
-        result.m23 = this.m03 * matrix.m20 + this.m13 * matrix.m21 + this.m23 * matrix.m22 + this.m33 * matrix.m23;
-
-        result.m30 = this.m00 * matrix.m30 + this.m10 * matrix.m31 + this.m20 * matrix.m32 + this.m30 * matrix.m33;
-        result.m31 = this.m01 * matrix.m30 + this.m11 * matrix.m31 + this.m21 * matrix.m32 + this.m31 * matrix.m33;
-        result.m32 = this.m02 * matrix.m30 + this.m12 * matrix.m31 + this.m22 * matrix.m32 + this.m32 * matrix.m33;
-        result.m33 = this.m03 * matrix.m30 + this.m13 * matrix.m31 + this.m23 * matrix.m32 + this.m33 * matrix.m33;
-
-        // Apply the result to the current instance
-        this.m00 = result.m00;
-        this.m01 = result.m01;
-        this.m02 = result.m02;
-        this.m03 = result.m03;
-
-        this.m10 = result.m10;
-        this.m11 = result.m11;
-        this.m12 = result.m12;
-        this.m13 = result.m13;
-
-        this.m20 = result.m20;
-        this.m21 = result.m21;
-        this.m22 = result.m22;
-        this.m23 = result.m23;
-
-        this.m30 = result.m30;
-        this.m31 = result.m31;
-        this.m32 = result.m32;
-        this.m33 = result.m33;
-    }
-
     /**
      *
      * @param {number} x
@@ -163,32 +113,5 @@ export class Matrix4f {
             this.m23,
             this.m33,
         ])
-    }
-
-    transpose() {
-        let temp;
-        temp = this.m01;
-        this.m01 = this.m10;
-        this.m10 = temp;
-
-        temp = this.m02;
-        this.m02 = this.m20;
-        this.m20 = temp;
-
-        temp = this.m03;
-        this.m03 = this.m30;
-        this.m30 = temp;
-
-        temp = this.m12;
-        this.m12 = this.m21;
-        this.m21 = temp;
-
-        temp = this.m13;
-        this.m13 = this.m31;
-        this.m31 = temp;
-
-        temp = this.m23;
-        this.m23 = this.m32;
-        this.m32 = temp;
     }
 }
