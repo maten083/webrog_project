@@ -48,7 +48,9 @@ export class Apple extends Entity {
             SnakeGame.variables.SPEED = SnakeGame.variables.SUPER_SPEED;
             SnakeGame.variables.SUPER_TIMER = 0;
         }
-        this.#isSuper = Math.random() > 0;
+        if (SnakeGame.variables.ALWAYS_SUPER)
+            this.#isSuper = true;
+        else this.#isSuper = Math.random() > 0.8;
 
         const normalTexture = this.getMiddleTexture();
         const superTexture = this.getLastTexture();

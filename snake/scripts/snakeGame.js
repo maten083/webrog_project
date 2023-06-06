@@ -38,6 +38,7 @@ export class SnakeGame {
         DEFAULT_SCALE: 1,
         SUPER_SCALE: 0.5,
         SCALE: 1,
+        ALWAYS_SUPER: true,
         SUPER_TIMEOUT: 10,
         SUPER_TIMER: null,
         CLEAR: {
@@ -173,7 +174,7 @@ export class SnakeGame {
 
             const infoBox = document.createElement('div');
             infoBox.innerHTML = `
-            <h1>Generic information:</h1>
+            <h1 class="generic-information-header">Generic information:</h1>
             Controls: (future plan: change key mapping - partially implemented right now)
             <ul>
                 <li>Up: W</li>
@@ -191,8 +192,36 @@ export class SnakeGame {
             <ul>
                 <li>Super: you get a speed boost, smaller size, and you do not die if you hit yourself. Lasts for ${SnakeGame.variables.SUPER_TIMEOUT} seconds</li>
             </ul>
+            Background musics:
+            <ul>
+                <li>Rinne - Awaken: <a href="https://www.youtube.com/watch?v=sketw8SjyrI" target="_blank">Youtube</a></li>
+                <li>Mitsukiyo - Awaken: <a href="https://www.youtube.com/watch?v=OrRjz5YjACM" target="_blank">Youtube</a></li>
+            </ul>
+            SFX from: <a href="https://mixkit.co/free-sound-effects/" target="_blank">Mixkit Free sound effects</a>
+            <br /><br />
             `;
             musicDropdownContainer.insertAdjacentElement('beforebegin', infoBox)
+
+            const checkboxTarget = infoBox.querySelector('.generic-information-header');
+            const superCheckbox = document.createElement('input');
+            superCheckbox.id = superCheckbox.name = 'super-checkbox';
+            superCheckbox.type = 'checkbox';
+            superCheckbox.checked = SnakeGame.variables.ALWAYS_SUPER;
+            superCheckbox.addEventListener('change', _ => {
+                SnakeGame.variables.ALWAYS_SUPER = superCheckbox.checked;
+            })
+            const superCheckboxLabel = document.createElement('label');
+            superCheckboxLabel.setAttribute('for', 'super-checkbox');
+            superCheckboxLabel.innerText = "Always generate super apple";
+            const superCheckboxContainer = document.createElement('div');
+            Object.assign(superCheckboxContainer.style, {
+                display: 'flex',
+                justifyContent: 'flex-start',
+                alignItems: 'center'
+            });
+            superCheckboxContainer.appendChild(superCheckboxLabel);
+            superCheckboxContainer.appendChild(superCheckbox);
+            checkboxTarget.insertAdjacentElement('afterend', superCheckboxContainer);
         } else {
             this.alert("Az Ön böngészője nem támogatja a WebGL 2-t! Kérem váltson egy másik, modern böngészőre, vagy ellenőrizze a beállításait!");
         }
