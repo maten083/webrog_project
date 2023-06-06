@@ -8,8 +8,6 @@ export class Segment {
     /** @type{number} */#y;
     /** @type{Direction} */#direction;
 
-    /** @type{Array.<{x: Number, y: Number, direction: Direction}>} */ #turningPoints;
-
     /** @type{Matrix4f} */#matrix;
 
     /** @type{number} */#segmentIndex;
@@ -25,103 +23,99 @@ export class Segment {
         this.#x = x;
         this.#y = y;
         this.#direction = direction;
-        this.#turningPoints = [];
         this.#matrix = Matrix4f.identity();
         this.#segmentIndex = entity.getSegments().length;
     }
 
+    duplicate(xOffset, yOffset) {
+        const dupe = new Segment(this.#entity,
+            this.#x + xOffset,
+            this.#y + yOffset,
+            this.#direction);
+
+        dupe.update(0, true, this);
+
+        return dupe;
+    }
+
     /**
      * @param {number} delta
+     * @param {boolean} updatePosition
+     * @param {Segment|null} previousSegment
+     *
+     * @returns {number} the distance that this segment was updated with
      */
-    update(delta) {
-        switch (this.#direction) {
-            case Direction.NONE:
-                break;
-            case Direction.RIGHT:
-                this.shift(SnakeGame.variables.SPEED * delta, 0);
+    update(delta, updatePosition, previousSegment = null) {
+        if (previousSegment !== null) {
+            [ this.#x, this.#y ] = this.calculatePosition(previousSegment);
+        } else if (updatePosition) {
+            let distance = SnakeGame.variables.SPEED * delta;
 
-                if (this.#turningPoints.length > 0 && this.#x >= this.#turningPoints[0].x) {
-                    this.#direction = this.#turningPoints[0].direction;
-                    this.#turningPoints.shift();
+            const update = () => {
+                switch (this.#direction) {
+                    case Direction.NONE:
+                        break;
+                    case Direction.RIGHT:
+                        this.shift(distance, 0);
+                        break;
+                    case Direction.LEFT:
+                        this.shift(-distance, 0);
+                        break;
+                    case Direction.UP:
+                        this.shift(0, distance);
+                        break;
+                    case Direction.DOWN:
+                        this.shift(0, -distance);
+                        break;
                 }
-                break;
-            case Direction.LEFT:
-                this.shift((-SnakeGame.variables.SPEED) * delta, 0);
-
-                if (this.#turningPoints.length > 0 && this.#x <= this.#turningPoints[0].x) {
-                    this.#direction = this.#turningPoints[0].direction;
-                    this.#turningPoints.shift();
-                }
-                break;
-            case Direction.UP:
-                this.shift(0, SnakeGame.variables.SPEED * delta);
-
-                if (this.#turningPoints.length > 0 && this.#y >= this.#turningPoints[0].y) {
-                    this.#direction = this.#turningPoints[0].direction;
-                    this.#turningPoints.shift();
-                }
-                break;
-            case Direction.DOWN:
-                this.shift(0, (-SnakeGame.variables.SPEED) * delta);
-
-                if (this.#turningPoints.length > 0 && this.#y <= this.#turningPoints[0].y) {
-                    this.#direction = this.#turningPoints[0].direction;
-                    this.#turningPoints.shift();
-                }
-                break;
+            }
+            update();
         }
 
-        let rot = 0;
-        // Direction might have been updated
-        switch (this.#direction) {
-            case Direction.UP:
-                rot = 180 * (Math.PI / 180);
-                break;
-            case Direction.LEFT:
-                rot = 90 * (Math.PI / 180);
-                break;
-            case Direction.RIGHT:
-                rot = 270 * (Math.PI / 180);
-                break;
-        }
-        this.#matrix.translate(this.#x, this.#y, rot, this.#entity.getScale())
+        this.#updateMatrix();
     }
 
     /**
-     * Get all turning points
-     * @returns {Array<{x: Number, y: Number, direction: Direction}>}
+     * @param {Segment} precedingSegment
      */
-    getTurningPoints() {
-        return this.#turningPoints;
-    }
+    calculatePosition(precedingSegment) {
+        const precedingX = precedingSegment.getX();
+        const precedingY = precedingSegment.getY();
+        const thisX = this.#x;
+        const thisY = this.#y;
 
+        let xDiff = thisX - precedingX;
+        let yDiff = thisY - precedingY;
+
+        const currentDistance = Math.sqrt(
+            Math.pow(xDiff, 2)
+            + Math.pow(yDiff, 2)
+        );
+        const targetDistance = this.#entity.getScale(true) * 2
+        const distance = targetDistance - currentDistance;
+
+        const angle = Math.atan2(yDiff, xDiff);
+
+        return [ thisX + distance * Math.cos(angle), thisY + distance * Math.sin(angle) ];
+    }
     /**
-     * Add a turning point
-     * @param {number} x
-     * @param {number} y
-     * @param {Direction} direction
+     * Check for intersection with another segment
+     * @param {Segment} segment
+     * @param {number} offset
      */
-    addTurningPoint(x, y, direction) {
-        this.#turningPoints.push({
-            x, y, direction
-        })
+    doesIntersect(segment, offset = 0) {
+        const distance = Math.sqrt(
+            Math.pow(this.#x - segment.#x, 2)
+            + Math.pow(this.#y - segment.#y, 2));
+
+        const radius1 = this.#entity.getScale();
+        const radius2 = segment.#entity.getScale();
+
+        return distance + offset <= radius1 + radius2;
     }
 
     getTransformationMatrix() {
         return this.#matrix;
-    }
-
-    /**
-     * Get the texture of the segment
-     * @returns {WebGLTexture}
-     */
-    getTexture() {
-        if (this.#entity.isInvariantTextures()) return this.#entity.getFirstTexture();
-
-        if (this.#segmentIndex === 0) return this.#entity.getFirstTexture();
-        if (this.#segmentIndex === this.#entity.getTextures().length - 1) return this.#entity.getLastTexture();
-
-        return this.#entity.getMiddleTexture();
     }
 
     /**
@@ -167,4 +161,15 @@ export class Segment {
      * @param {number} value
      */
     setY(value) { this.#y = value; }
+
+    /**
+     * Gets the [x,y] coordinates
+     *
+     * @returns {number[]}
+     */
+    getCoordinates() { return [ this.#x, this.#y ]; };
+
+    #updateMatrix() {
+        this.#matrix.translate(this.#x, this.#y, 0, this.#entity.getScale());
+    }
 }

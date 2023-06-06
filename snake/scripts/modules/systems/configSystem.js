@@ -1,4 +1,5 @@
 import {BaseSystem} from "./baseSystem.js";
+import {AudioKeys} from "./audioSystem.js";
 
 /**
  * @readonly
@@ -16,15 +17,19 @@ const ControlKeys = {
     /** @type{number} */
     CONFIRM: 4,
     /** @type{number} */
-    CANCEL: 5
+    CANCEL: 5,
+    /** @type{number} */
+    PAUSE: 6
 }
 export class ConfigSystem extends BaseSystem {
     /** @type{string[]} */ #excludedValues;
     /** @type{CustomEvent} */ #cancelEvent;
-    /** @type{CustomEvent} */ #configChanged;
+    /** @type{string} */ #configChanged;
 
     /** @type{object} */ keymap;
     /** @type{number} */ fps = 120;
+
+    /** @type{AudioKeys} */ selectedMusic = AudioKeys.MUSIC1;
 
     /** @type{ControlKeys|null} */ recording;
 
@@ -46,7 +51,7 @@ export class ConfigSystem extends BaseSystem {
             'recording'
         ]
         this.#cancelEvent = new CustomEvent("cancel_record");
-        this.#configChanged = new CustomEvent("config_changed");
+        this.#configChanged = "config_changed";
     }
 
     /**
@@ -54,21 +59,26 @@ export class ConfigSystem extends BaseSystem {
      */
     init() {
         let configJson = localStorage.getItem("snake_config");
+        this.keymap = {
+            [ControlKeys.UP]: 'KeyW',
+            [ControlKeys.DOWN]: 'KeyS',
+            [ControlKeys.LEFT]: 'KeyA',
+            [ControlKeys.RIGHT]: 'KeyD',
+            [ControlKeys.PAUSE]: 'Space',
+            [ControlKeys.CONFIRM]: 'Enter',
+            [ControlKeys.CANCEL]: 'Escape',
+        };
 
         if (!configJson) {
-            this.keymap = {
-                [ControlKeys.UP]: 'KeyW',
-                [ControlKeys.DOWN]: 'KeyS',
-                [ControlKeys.LEFT]: 'KeyA',
-                [ControlKeys.RIGHT]: 'KeyD',
-                [ControlKeys.CONFIRM]: 'Enter',
-                [ControlKeys.CANCEL]: 'Escape',
-            };
-
             this.save();
         }
         else {
             const config = JSON.parse(configJson);
+            // Ensure that config entries that are not present in the LocalStorage aren't lost.
+            Object.assign(this.keymap, config.keymap);
+            config.keymap = this.keymap;
+
+            // Assign rest of the values
             Object.assign(this, config);
         }
     }
@@ -78,8 +88,28 @@ export class ConfigSystem extends BaseSystem {
     }
     setFps(fps) {
         this.fps = fps;
-        this.#configChanged.detail = { type: 'fps' };
-        this.root.dispatchEvent(this.#configChanged);
+        this.root.dispatchEvent(new CustomEvent(this.#configChanged, { detail: { type: 'fps' } }));
+        this.save();
+    }
+
+    getSelectedMusic() {
+        return this.selectedMusic;
+    }
+
+    /**
+     * Set the selected music
+     * @param {number|AudioKeys} key
+     */
+    setSelectedMusic(key) {
+        const previous = this.selectedMusic;
+        this.selectedMusic = key;
+        this.root.dispatchEvent(new CustomEvent(this.#configChanged, {
+            detail: {
+                type: 'selectedMusic',
+                previous: previous,
+                current: key
+            }
+        }));
         this.save();
     }
 
@@ -143,9 +173,10 @@ export class ConfigSystem extends BaseSystem {
      */
     #innerRegisterKey(key, canvas, resolve, e) {
         this.keymap[key] = e.key;
-        this.#configChanged.detail = { type: 'key' };
         canvas.removeEventListener("keydown", this.#innerRegisterKey);
+        this.root.dispatchEvent(new CustomEvent(this.#configChanged, { detail: { type: 'key' }}));
         this.recording = null;
+        this.save();
         resolve();
     }
 }

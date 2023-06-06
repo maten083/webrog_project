@@ -1,4 +1,5 @@
 import {Segment} from "./baseEntitites/segment.js";
+import {SnakeGame} from "../snakeGame.js";
 
 /**
  * @readonly
@@ -33,9 +34,34 @@ export class Entity {
     addSegment(x, y) {
         const last = this.#segments[this.#segments.length - 1];
         const newSegment = new Segment(this, x, y, last.getDirection());
-        for (const turningPoint of last.getTurningPoints())
-            newSegment.addTurningPoint(turningPoint.x, turningPoint.y, turningPoint.direction);
         this.#segments.push(newSegment);
+    }
+    duplicateLastSegment() {
+        const last = this.#segments[this.#segments.length - 1];
+        let xOffset = 0;
+        let yOffset = 0;
+
+        switch (this.getCurrentDirection()) {
+            case Direction.UP:
+                xOffset = 1;
+                yOffset = 1;
+                break;
+            case Direction.DOWN:
+                xOffset = -1;
+                yOffset = -1;
+                break;
+            case Direction.LEFT:
+                xOffset = 1;
+                yOffset = -1;
+                break;
+            case Direction.RIGHT:
+                xOffset = -1;
+                yOffset = -1;
+                break;
+        }
+
+        const dupe = last.duplicate(xOffset, yOffset);
+        this.#segments.push(dupe)
     }
     /**
      * Get the direction of the first segment
@@ -47,16 +73,36 @@ export class Entity {
 
     /**
      * Get the scale of the entity;
+     *
+     * @param {boolean} useDefaultScale - Whether to use SCALE or DEFAULT_SCALE variable.
+     *
      * @returns {number}
      */
-    getScale() {
-        return this.#scale;
+    getScale(useDefaultScale = false) {
+        return this.#scale * (useDefaultScale ? SnakeGame.variables.DEFAULT_SCALE : SnakeGame.variables.SCALE);
     }
 
-    update(delta) {
-        for (const segment of this.#segments) {
-            segment.update(delta);
+    /**
+     * Update entity and its segments
+     *
+     * @param {number} delta
+     * @param {boolean} updatePosition
+     *
+     * @returns {boolean[]} - first is the main state, second is the secondary state (for apple)
+     */
+    update(delta, updatePosition) {
+        this.#segments[0].update(delta, updatePosition);
+        for (let i = 1; i < this.#segments.length; i++) {
+            this.#segments[i].update(delta, updatePosition, this.#segments[i - 1])
+
+            if (updatePosition) {
+                if (i !== 0 && this.#segments[0].doesIntersect(this.#segments[i], 0.04)) {
+                    return [ true, false ];
+                }
+            }
         }
+        return [ this.#segments[0].getX() > 1 || this.#segments[0].getX() < -1
+            || this.#segments[0].getY() > 1 || this.#segments[0].getY() < -1, false ];
     }
 
     isInvariantTextures() {

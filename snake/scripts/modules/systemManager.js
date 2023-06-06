@@ -25,11 +25,18 @@ export class SystemManager {
     /**
      * Updates all systems
      * @param {number} delta
+     * @param {boolean} paused
+     *
+     * @returns {boolean} The result of EntitySystem: true if dead
      */
-    updateSystems(delta) {
+    updateSystems(delta, paused) {
+        let result = false;
         for (const system of Object.values(this.#systems)) {
-            system.update(delta);
+            if (system.type === 'entity')
+                result = system.update(delta, paused);
+            else system.update(delta, paused);
         }
+        return result;
     }
     /** @returns{systems.AudioSystem} */
     getAudio() {
@@ -44,5 +51,10 @@ export class SystemManager {
     /** @returns{systems.EntitySystem} */
     getEntity() {
         return this.#systems["entity"];
+    }
+
+    /** @returns{systems.GenericInputSystem} */
+    getGenericInput() {
+        return this.#systems['genericInput'];
     }
 }

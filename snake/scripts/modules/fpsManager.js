@@ -16,13 +16,20 @@ export class FpsManager {
         this.#fpsTimeLimit = this.#lastFrameTime = performance.now();
     }
 
-    updateFpsCounter() {
+    /**
+     * Update FPS counter and get the delta time
+     * @param {function|null} gotNewFPSValue - Callback when there is a new FPS reading
+     * @returns {number} delta time
+     */
+    updateFpsCounter(gotNewFPSValue = null) {
         const now = performance.now();
 
         if (now - this.#fpsTimeLimit > 1000) {
             this.#fpsTimeLimit = now;
 
-            console.log(this.#fpsCounter);
+            if (typeof gotNewFPSValue === 'function') {
+                gotNewFPSValue(this.#fpsCounter);
+            }
 
             this.#fpsCounter = 0;
         } else {

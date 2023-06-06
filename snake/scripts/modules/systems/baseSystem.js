@@ -20,6 +20,13 @@ export class BaseSystem {
     init() {
         throw new Error("Init method was not implemented in the subsystem");
     }
-    
-    update(deltaTime) {}
+
+    /**
+     * Update the system
+     * @param {number} deltaTime
+     * @param {boolean} paused
+     *
+     * @returns{boolean}
+     */
+    update(deltaTime, paused) { return false; }
 }

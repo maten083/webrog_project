@@ -5,6 +5,7 @@ import {Apple} from "./entities/apple.js";
 import {MainRenderer} from "./render/mainRenderer.js";
 import {FpsManager} from "./modules/fpsManager.js";
 import {Snake} from "./entities/snake.js";
+import {AudioKeys} from "./modules/systems/audioSystem.js";
 
 export class SnakeGame {
     /** @type{HTMLDivElement} */ #root;
@@ -23,18 +24,37 @@ export class SnakeGame {
     /** @type{MainRenderer} */ #mainRenderer;
 
     /** @type{FpsManager} */ #fpsManager;
+    /** @type{boolean} */#isDead = false;
+    /** @type{boolean} */#processedDeath = false;
 
-    /** @type{{SPEED: number}} */static variables = {
-        SPEED: 0.2,
+    /** @type{number} */#score = 0;
+
+    static variables = {
         AREA_WIDTH: 600,
         AREA_HEIGHT: 600,
-        SUPER_DURATION: 200,
-        SUPER_HEIGHT: 0.5
+        DEFAULT_SPEED: 0.4,
+        SUPER_SPEED: 0.8,
+        SPEED: 0.4,
+        DEFAULT_SCALE: 1,
+        SUPER_SCALE: 0.5,
+        SCALE: 1,
+        SUPER_TIMEOUT: 10,
+        SUPER_TIMER: null,
+        CLEAR: {
+            R: 48 / 255,
+            G: 107 / 255,
+            B: 48 / 255
+        }
     };
 
     /** @type{Snake} */#snake;
     /** @type{Apple} */#apple;
 
+    /** @type{HTMLSpanElement} */#fpsCounter;
+    /** @type{HTMLSpanElement} */#scoreCounter;
+
+    /** @type{boolean} */#paused = true;
+    /** @type{HTMLDivElement} */#pausedLabel;
 
     constructor() {
         this.#root = document.createElement("div");
@@ -53,11 +73,38 @@ export class SnakeGame {
         this.#canvas = document.createElement("canvas");
         this.#canvas.width = SnakeGame.variables.AREA_WIDTH;
         this.#canvas.height = SnakeGame.variables.AREA_HEIGHT;
+        this.#canvas.setAttribute('style', `position: absolute; left: 0; top: 0;`);
         this.#canvas.tabIndex = 1;
         this.#gl = this.#canvas.getContext("webgl2") || this.#canvas.getContext("experimental-webgl");
 
         if (this.#gl instanceof WebGL2RenderingContext) {
-            this.#root.appendChild(this.#canvas);
+            // Setup canvas container
+            const canvasContainer = document.createElement('div');
+            canvasContainer.id = "canvas-container";
+            Object.assign(canvasContainer.style, {
+                position: 'relative',
+                width: `${SnakeGame.variables.AREA_WIDTH}px`,
+                height: `${SnakeGame.variables.AREA_HEIGHT}px`
+            })
+            canvasContainer.appendChild(this.#canvas);
+
+            // Setup paused label
+            this.#pausedLabel = document.createElement('div');
+            Object.assign(this.#pausedLabel.style, {
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                padding: '12px 7px',
+                background: 'white',
+                border: '1px solid black',
+                fontWeight: 'bold',
+                color: 'red'
+            });
+            this.#pausedLabel.innerText = 'PAUSED';
+            canvasContainer.appendChild(this.#pausedLabel);
+
+            this.#root.appendChild(canvasContainer);
             this.#canvas.focus();
             this.#systemManager.loadSystems(this.#root, this);
             this.#loader = new Loader(this.#gl);
@@ -67,22 +114,85 @@ export class SnakeGame {
             this.#mainRenderer = new MainRenderer(this.#gl);
             await this.#mainRenderer.init(this.#loader);
 
-            this.#apple = new Apple(0, 0, Direction.NONE);
-            this.#apple.setTextures(this.#loader.getTexture(TextureTypes.APPLE),
-                this.#loader.getTexture(TextureTypes.APPLE),
-                this.#loader.getTexture(TextureTypes.SUPER_APPLE));
-
             this.#snake = new Snake(0, 0, Direction.RIGHT);
             this.#snake.setTextures(this.#loader.getTexture(TextureTypes.SNAKE_HEAD),
                 this.#loader.getTexture(TextureTypes.SNAKE_BODY),
                 this.#loader.getTexture(TextureTypes.SNAKE_TAIL));
 
-            //this.#entities.push(this.#apple);
+            this.#apple = new Apple(this.#snake);
+            this.#apple.setTextures(this.#loader.getTexture(TextureTypes.APPLE),
+                this.#loader.getTexture(TextureTypes.APPLE),
+                this.#loader.getTexture(TextureTypes.SUPER_APPLE));
+
+
+            this.#entities.push(this.#apple);
             this.#entities.push(this.#snake);
 
             this.#fpsManager = new FpsManager(this);
             this.#fpsManager.handleFpsChange();
             this.#addEventListeners();
+
+            this.#fpsCounter = document.createElement('span');
+            this.#fpsCounter.innerText = "0 FPS";
+            this.#root.insertAdjacentElement("afterbegin", this.#fpsCounter);
+
+            // Setup score label
+            this.#scoreCounter = document.createElement('span');
+            this.#scoreCounter.innerText = "Score: 0";
+            this.#root.insertAdjacentElement("beforeend", this.#scoreCounter);
+
+
+            const musicLabel = document.createElement("label");
+            musicLabel.for = "music-dropdown";
+            musicLabel.innerText = "Background Music: ";
+
+            const musicDropdown = document.createElement('select');
+            musicDropdown.id = "music-dropdown";
+            musicDropdown.name = "music-dropdown";
+            const availableMusics = this.#systemManager.getAudio().getAvailableMusics();
+            const currentlySelectedMusic = `${this.#systemManager.getConfig().getSelectedMusic()}`;
+            for (let i = 0; i < availableMusics.length; i++) {
+                const option = document.createElement('option');
+                option.value = `${i}`;
+                option.text = availableMusics[i].title;
+
+                if (currentlySelectedMusic === option.value) {
+                    option.selected = true;
+                }
+
+                musicDropdown.appendChild(option);
+            }
+            musicDropdown.addEventListener("change", _ => {
+                this.#systemManager.getConfig().setSelectedMusic(musicDropdown.selectedIndex);
+            });
+
+            const musicDropdownContainer = document.createElement("div");
+            musicDropdownContainer.appendChild(musicLabel);
+            musicDropdownContainer.appendChild(musicDropdown);
+            this.#fpsCounter.insertAdjacentElement("beforebegin", musicDropdownContainer);
+
+            const infoBox = document.createElement('div');
+            infoBox.innerHTML = `
+            <h1>Generic information:</h1>
+            Controls: (future plan: change key mapping - partially implemented right now)
+            <ul>
+                <li>Up: W</li>
+                <li>Down: S</li>
+                <li>Left: A</li>
+                <li>Right: D</li>
+                <li>Pause / unpause: Space</li>
+            </ul>
+            Apples:
+            <ul>
+                <li>Yellow apple: gives you 'super' status</li>
+                <li>Red apple: normal apple, does not clear 'super' status</li>
+            </ul>
+            Statuses:
+            <ul>
+                <li>Super: you get a speed boost, smaller size, and you do not die if you hit yourself. Lasts for ${SnakeGame.variables.SUPER_TIMEOUT} seconds</li>
+            </ul>
+            `;
+            musicDropdownContainer.insertAdjacentElement('beforebegin', infoBox)
         } else {
             this.alert("Az Ön böngészője nem támogatja a WebGL 2-t! Kérem váltson egy másik, modern böngészőre, vagy ellenőrizze a beállításait!");
         }
@@ -135,6 +245,7 @@ export class SnakeGame {
         this.#mainIntervalId = setInterval(this.#gameLoop.bind(this), intervalTime);
     }
 
+
     alert(content) {
         const msg = document.createElement("div");
         msg.classList.add('alert');
@@ -142,19 +253,71 @@ export class SnakeGame {
         this.#root.appendChild(msg);
     }
 
+    /**
+     * Check if the game is paused
+     * @returns {boolean}
+     */
+    isPaused() {
+        return this.#paused;
+    }
+
+    togglePaused() {
+        const audio = this.getSystemManager().getAudio();
+
+        if (!this.#isDead) {
+            this.#paused = !this.#paused;
+            if (this.#paused) {
+                audio.pauseBackgroundMusic();
+            } else {
+                audio.playBackgroundMusic();
+            }
+        } else if(!this.#processedDeath) {
+            this.#processedDeath = true;
+            audio.pauseBackgroundMusic();
+            audio.get(AudioKeys.FAIL).play();
+        }
+
+        this.#checkPaused();
+    }
+
+
     /*
      * Private methods
      */
+    #checkPaused() {
+        this.#pausedLabel.style.display = this.#paused ? null : 'none';
+    }
+
     #addEventListeners() {
         window.addEventListener("resize", function() {
             this.#gl.viewport(0, 0, this.#gl.drawingBufferWidth, this.#gl.drawingBufferHeight);
         }.bind(this));
     }
     #gameLoop() {
-        const deltaTime = this.#fpsManager.updateFpsCounter();
-        this.#systemManager.updateSystems(deltaTime);
+        const deltaTime = this.#fpsManager.updateFpsCounter(fps => {
+            this.#fpsCounter.innerText = `${fps} FPS`;
+        });
+
+        const dead = this.#systemManager.updateSystems(deltaTime, this.#paused);
 
         this.#mainRenderer.prepare();
         this.#mainRenderer.render(this.#entities);
+
+        if (dead) {
+            this.#dead();
+            this.togglePaused();
+        }
+
+        const currentScore = this.#snake.getSegments().length - 2;
+        if (currentScore !== this.#score) {
+            this.#score = currentScore;
+            this.#scoreCounter.innerText = `Score: ${this.#score}`;
+        }
+    }
+    #dead() {
+        this.#isDead = true;
+        this.#paused = true;
+        this.#pausedLabel.innerHTML = `You died.<br /><a href="javascript:window.location.reload()">Restart?</a>`
+        clearInterval(this.#mainIntervalId);
     }
 }

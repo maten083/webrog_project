@@ -69,8 +69,6 @@ export class Loader {
                     resolve(null);
                 };
                 img.src = url;
-
-
             });
         }
 
@@ -81,7 +79,6 @@ export class Loader {
                 break;
             }
             const texture = this.#createTexture(gl, image);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
             this.#textureMap.set(i, texture);
         }
     }
