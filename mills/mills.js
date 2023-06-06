@@ -14,7 +14,7 @@ export class Mills {
             this.context = this.canvas.getContext('2d');
             document.body.appendChild(this.canvas);
             this.context.drawImage(this.map, 0, 0);
-            this.grid = new Grid(this.canvas, this.context);
+            this.grid = new Grid(this.canvas, this.context, this.map);
         })
     }
     loadMap(then) {
