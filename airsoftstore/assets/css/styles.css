@@ -231,3 +231,19 @@ button {
 #closePopupBtn {
     margin-top: 10px;
 }
+
+#cartCount {
+    margin-left: 5px;
+}
+
+#backToHome {
+    display: block;
+    color: white;
+    margin-bottom: 10px;
+}
+#backToHome:visited {
+    color: white;
+}
+#placeOrderBtn {
+    margin-top: 10px;
+}
