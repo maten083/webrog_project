@@ -23,7 +23,7 @@ export class Calculator {
             new CalculatorButton("10<sup>x</sup>", Methods.evalState, "10^x"),
             new CalculatorButton("xⁿ", Methods.pushState, "x^y"),
             new CalculatorButton("1/x", Methods.evalState),
-            new CalculatorButton("mod", Methods.evalState, "mod", "%"),
+            new CalculatorButton("mod", Methods.pushState, "mod", "%"),
             new CalculatorButton("n!", Methods.evalState, "!"),
             new CalculatorButton("lg", Methods.evalState),
             new CalculatorButton("rand", Methods.evalState),
@@ -45,7 +45,7 @@ export class Calculator {
         }
         this.calcButtons.push(new CalculatorButton("+/-", this.negate));
         this.calcButtons.push(new CalculatorButton("0", this.addNumber, 0, "0"));
-        this.calcButtons.push(new CalculatorButton(".", this.addNumber, '=', '.|,'));
+        this.calcButtons.push(new CalculatorButton(".", this.addNumber, '.', '.|,'));
         this.calcButtons.push(new CalculatorButton(`=`, Methods.evalEquals, '=', 'Enter'));
     }
     init(){
